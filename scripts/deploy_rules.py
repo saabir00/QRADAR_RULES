@@ -38,7 +38,6 @@ def transform_to_qradar_payload(custom_json):
     """Xüsusi JSON strukturunu QRadar Rule payload-una çevirir."""
     aql_query = custom_json.get("aql", "")
     
-    # AQL sorğusundan yalnız WHERE hissəsini (şərti) kəsirik
     where_match = re.search(r'WHERE\s+(.*?)(?:\s+ORDER\s+BY|\s+LAST\s+|\s*$)', aql_query, re.IGNORECASE)
     aql_condition = where_match.group(1).strip() if where_match else ""
 
@@ -46,12 +45,11 @@ def transform_to_qradar_payload(custom_json):
         print(f"   XƏTA: '{custom_json.get('id')}' üçün AQL 'WHERE' şərti tapılmadı.")
         return None
 
-    # Təhlükəsizlik səviyyələrini rəqəmə çeviririk (QRadar API rəqəm tələb edir)
     qradar_meta = custom_json.get("qradar", {})
     credibility = qradar_meta.get("credibility", 8)
     relevance = qradar_meta.get("relevance", 8)
 
-    # QRadar API-nin qəbul etdiyi rəsmi Rule JSON formatı
+    # DİQQƏT: Aşağıdakı mötərizə və vergüllərin tam olduğuna əmin olun
     qradar_payload = {
         "name": qradar_meta.get("rule_name", custom_json.get("title", "Unnamed SOC Rule")),
         "identifier": custom_json.get("id", ""),
@@ -60,4 +58,18 @@ def transform_to_qradar_payload(custom_json):
         "responses": {
             "offense": {
                 "enabled": qradar_meta.get("response_action") == "create_offense",
-                "severity": credibility, # Çox vaxt severity text olur deyə credibility-ni
+                "severity": credibility,
+                "credibility": credibility,
+                "relevance": relevance
+            }
+        },
+        "tests": [
+            {
+                "uid": "1",
+                "type": "AQLFilterTest",
+                "aql": aql_condition
+            }
+        ]
+    }
+    
+    return qradar_payload
