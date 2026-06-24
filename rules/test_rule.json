@@ -1,0 +1,11 @@
+{
+  "id": "API-TEST-001",
+  "title": "API UI Test Rule",
+  "qradar": {
+    "rule_name": "API-TEST-001: Interfeys Gorunme Testi",
+    "credibility": 5,
+    "relevance": 5,
+    "response_action": "create_offense"
+  },
+  "aql": "SELECT * FROM events WHERE sourceip = '1.2.3.4'"
+}
