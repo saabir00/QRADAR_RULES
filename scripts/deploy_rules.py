@@ -48,4 +48,5 @@ def test_qradar_connection():
             print("   ✅ BAĞLANTI UĞURLUDUR: Token etibarlıdır və API ilə əlaqə quruldu!\n")
             return True
         elif response.status_code in [401, 403]:
-            print(f"   ❌ XƏTA (HTTP {response.status_code}): Token səhv
+            print(f"   ❌ XƏTA (HTTP {response.status_code}): Token səhvdir və ya yetki çatmır!")
+            return False
