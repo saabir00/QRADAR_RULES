@@ -27,49 +27,25 @@ if not QRADAR_HOST or not QRADAR_TOKEN:
     sys.exit(1)
 
 HEADERS = {
-    'SEC'     : QRADAR_TOKEN,
-    'Accept'  : 'application/json',
+    'SEC'         : QRADAR_TOKEN,
+    'Accept'      : 'application/json',
     'Content-Type': 'application/json',
-    'Version' : '19.0', # Analytics Rules API üçün uyğun versiya
+    'Version'     : '19.0', # Analytics Rules API üçün uyğun versiya
 }
 
-# ── JSON Tərcüməçi (Converter) ────────────────────────────────────
-def transform_to_qradar_payload(custom_json):
-    """Xüsusi JSON strukturunu QRadar Rule payload-una çevirir."""
-    aql_query = custom_json.get("aql", "")
+# ── 1. Bağlantı və Token Testi ────────────────────────────────────
+def test_qradar_connection():
+    """QRadar API ilə bağlantını və Token-in etibarlılığını yoxlayır."""
+    print("🔍 QRadar API bağlantısı və Token yoxlanılır...")
     
-    where_match = re.search(r'WHERE\s+(.*?)(?:\s+ORDER\s+BY|\s+LAST\s+|\s*$)', aql_query, re.IGNORECASE)
-    aql_condition = where_match.group(1).strip() if where_match else ""
-
-    if not aql_condition:
-        print(f"   XƏTA: '{custom_json.get('id')}' üçün AQL 'WHERE' şərti tapılmadı.")
-        return None
-
-    qradar_meta = custom_json.get("qradar", {})
-    credibility = qradar_meta.get("credibility", 8)
-    relevance = qradar_meta.get("relevance", 8)
-
-    # DİQQƏT: Aşağıdakı mötərizə və vergüllərin tam olduğuna əmin olun
-    qradar_payload = {
-        "name": qradar_meta.get("rule_name", custom_json.get("title", "Unnamed SOC Rule")),
-        "identifier": custom_json.get("id", ""),
-        "enabled": True,
-        "type": "EVENT",
-        "responses": {
-            "offense": {
-                "enabled": qradar_meta.get("response_action") == "create_offense",
-                "severity": credibility,
-                "credibility": credibility,
-                "relevance": relevance
-            }
-        },
-        "tests": [
-            {
-                "uid": "1",
-                "type": "AQLFilterTest",
-                "aql": aql_condition
-            }
-        ]
-    }
+    # Çox yüngül bir sorğu göndəririk (sadəcə 1 qaydanı gətirməsini istəyirik)
+    test_url = f"{QRADAR_HOST}/api/analytics/rules?Range=items=0-0"
     
-    return qradar_payload
+    try:
+        response = requests.get(test_url, headers=HEADERS, verify=False, timeout=15)
+        
+        if response.status_code in [200, 206]:
+            print("   ✅ BAĞLANTI UĞURLUDUR: Token etibarlıdır və API ilə əlaqə quruldu!\n")
+            return True
+        elif response.status_code in [401, 403]:
+            print(f"   ❌ XƏTA (HTTP {response.status_code}): Token səhv
