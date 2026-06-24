@@ -2,10 +2,6 @@
 """
 QRadar Rule Deploy Script — Custom JSON to QRadar Analytics API
 GitHub Actions CI/CD Pipeline
-
-Hər rules/*.json faylını oxuyur, AQL daxilindən WHERE şərtini kəsir 
-və QRadar-ın Analytics API-sinə (Rule Engine) POST/PUT edir.
-Bununla da qaydalar birbaşa "Offenses -> Rules" bölməsinə əlavə olunur.
 """
 
 import os
@@ -30,15 +26,12 @@ HEADERS = {
     'SEC'         : QRADAR_TOKEN,
     'Accept'      : 'application/json',
     'Content-Type': 'application/json',
-    'Version'     : '19.0', # Analytics Rules API üçün uyğun versiya
+    'Version'     : '19.0', 
 }
 
 # ── 1. Bağlantı və Token Testi ────────────────────────────────────
 def test_qradar_connection():
-    """QRadar API ilə bağlantını və Token-in etibarlılığını yoxlayır."""
     print("🔍 QRadar API bağlantısı və Token yoxlanılır...")
-    
-    # Çox yüngül bir sorğu göndəririk (sadəcə 1 qaydanı gətirməsini istəyirik)
     test_url = f"{QRADAR_HOST}/api/analytics/rules?Range=items=0-0"
     
     try:
@@ -50,3 +43,30 @@ def test_qradar_connection():
         elif response.status_code in [401, 403]:
             print(f"   ❌ XƏTA (HTTP {response.status_code}): Token səhvdir və ya yetki çatmır!")
             return False
+        else:
+            print(f"   ⚠️ GÖZLƏNİLMƏZ CAVAB (HTTP {response.status_code}): {response.text}")
+            return False
+            
+    except requests.exceptions.Timeout:
+        print("   ❌ XƏTA: QRadar serverinə qoşularkən vaxt bitdi (Timeout).")
+        return False
+    except requests.exceptions.ConnectionError:
+        print("   ❌ XƏTA: QRadar serverinə qoşulmaq mümkün olmadı.")
+        return False
+    except Exception as e:
+        print(f"   ❌ XƏTA: Gözlənilməz problem baş verdi: {e}")
+        return False
+
+
+# ── 2. JSON Tərcüməçi (Converter) ─────────────────────────────────
+def transform_to_qradar_payload(custom_json):
+    aql_query = custom_json.get("aql", "")
+    
+    where_match = re.search(r'WHERE\s+(.*?)(?:\s+ORDER\s+BY|\s+LAST\s+|\s*$)', aql_query, re.IGNORECASE)
+    aql_condition = where_match.group(1).strip() if where_match else ""
+
+    if not aql_condition:
+        print(f"   XƏTA: '{custom_json.get('id')}' üçün AQL 'WHERE' şərti tapılmadı.")
+        return None
+
+    qradar_
