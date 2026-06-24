@@ -1,11 +1,32 @@
 {
   "id": "API-TEST-001",
   "title": "API UI Test Rule",
+  "status": "production",
+  "description": "API-nin interfeysde gorunub-gorunmediyini yoxlamaq ucun test qaydasi.",
+  "author": "SOC Team",
+  "date": "2026/06/24",
+  "tags": [
+    "test"
+  ],
+  "mitre": {
+    "tactic": "Test",
+    "technique": "T0000",
+    "subtechnique": ""
+  },
+  "logsource": {
+    "product": "windows",
+    "service": "security"
+  },
   "qradar": {
     "rule_name": "API-TEST-001: Interfeys Gorunme Testi",
+    "severity": "LOW",
     "credibility": 5,
     "relevance": 5,
     "response_action": "create_offense"
   },
-  "aql": "SELECT * FROM events WHERE sourceip = '1.2.3.4'"
+  "aql": "SELECT LOGSOURCENAME(logsourceid) AS host, username AS performed_by FROM events WHERE sourceip = '1.2.3.4'",
+  "falsepositives": [
+    "Test"
+  ],
+  "level": "low"
 }
